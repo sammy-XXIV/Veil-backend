@@ -13,7 +13,7 @@ app.get('/health', (req, res) => {
 
 app.post('/encrypt', async (req, res) => {
   const { amount, contractAddress, userAddress } = req.body;
-  
+
   if (!amount || !contractAddress || !userAddress) {
     return res.status(400).json({ error: 'Missing fields' });
   }
@@ -32,9 +32,13 @@ app.post('/encrypt', async (req, res) => {
       .add64(BigInt(amount))
       .encrypt();
 
+    // Serialize to hex strings for JSON transport
+    const handleHex = '0x' + Buffer.from(encrypted.handles[0]).toString('hex');
+    const proofHex = '0x' + Buffer.from(encrypted.inputProof).toString('hex');
+
     res.json({
-      handle: encrypted.handles[0],
-      inputProof: encrypted.inputProof,
+      handle: handleHex,
+      inputProof: proofHex,
       success: true
     });
 
