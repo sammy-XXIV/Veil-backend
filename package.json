@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@zama-fhe/relayer-sdk": "^0.2.0"
+  }
+}
