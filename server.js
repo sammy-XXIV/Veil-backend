@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { createInstance, SepoliaConfig } = require('@zama-fhe/relayer-sdk/node');
+const { ethers } = require('ethers');
 
 const app = express();
 app.use(cors());
@@ -14,13 +15,17 @@ app.post('/encrypt', async (req, res) => {
   }
 
   try {
+    // Checksum addresses - SDK requires EIP-55 checksummed addresses
+    const checksumContract = ethers.getAddress(contractAddress);
+    const checksumUser = ethers.getAddress(userAddress);
+
     const instance = await createInstance({
       ...SepoliaConfig,
       network: 'https://ethereum-sepolia-rpc.publicnode.com',
     });
 
     const encrypted = await instance
-      .createEncryptedInput(contractAddress, userAddress)
+      .createEncryptedInput(checksumContract, checksumUser)
       .add64(BigInt(amount))
       .encrypt();
 
