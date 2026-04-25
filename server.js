@@ -16,7 +16,7 @@ app.post('/encrypt', async (req, res) => {
   try {
     const instance = await createInstance({
       ...SepoliaConfig,
-      network: 'https://eth-sepolia.public.blastapi.io',
+      network: 'https://ethereum-sepolia-rpc.publicnode.com',
     });
 
     const encrypted = await instance
