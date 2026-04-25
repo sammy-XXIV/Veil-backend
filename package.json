@@ -4,7 +4,7 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "@zama-fhe/relayer-sdk": "^0.2.0",
+    "@zama-fhe/relayer-sdk": "0.4.0-5",
     "express": "^4.18.2",
     "cors": "^2.8.5"
   }
