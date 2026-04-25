@@ -7,6 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 app.post('/encrypt', async (req, res) => {
   const { amount, contractAddress, userAddress } = req.body;
   
@@ -15,7 +19,6 @@ app.post('/encrypt', async (req, res) => {
   }
 
   try {
-    // Checksum addresses - SDK requires EIP-55 checksummed addresses
     const checksumContract = ethers.getAddress(contractAddress);
     const checksumUser = ethers.getAddress(userAddress);
 
