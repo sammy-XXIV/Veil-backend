@@ -32,8 +32,8 @@ app.post('/encrypt', async (req, res) => {
       .add64(BigInt(amount))
       .encrypt();
 
-    // Serialize to hex strings for JSON transport
-    const handleHex = '0x' + Buffer.from(encrypted.handles[0]).toString('hex');
+    // handles[0] is already a bytes32 hex string
+    const handleHex = encrypted.handles[0];
     const proofHex = '0x' + Buffer.from(encrypted.inputProof).toString('hex');
 
     res.json({
