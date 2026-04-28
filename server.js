@@ -32,9 +32,14 @@ app.post('/encrypt', async (req, res) => {
       .add64(BigInt(amount))
       .encrypt();
 
-    // handles[0] is already a bytes32 hex string
-    const handleHex = encrypted.handles[0];
-    const proofHex = '0x' + Buffer.from(encrypted.inputProof).toString('hex');
+    // handles[0] and inputProof are Uint8Arrays — convert to hex
+    const toHex = (val) => {
+      if (typeof val === 'string' && val.startsWith('0x')) return val;
+      return '0x' + Buffer.from(val).toString('hex');
+    };
+
+    const handleHex = toHex(encrypted.handles[0]);
+    const proofHex = toHex(encrypted.inputProof);
 
     res.json({
       handle: handleHex,
@@ -43,6 +48,7 @@ app.post('/encrypt', async (req, res) => {
     });
 
   } catch (err) {
+    console.error('Encrypt error:', err);
     res.status(500).json({ error: err.message, success: false });
   }
 });
