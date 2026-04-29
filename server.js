@@ -37,8 +37,8 @@ app.post('/decrypt-prepare', async (req, res) => {
   try {
     const instance = await getInstance();
     const keypair = instance.generateKeypair();
-    const startTimestamp = Math.floor(Date.now() / 1000).toString();
-    const durationDays = '10';
+    const startTimestamp = Math.floor(Date.now() / 1000);
+    const durationDays = 10;
 
     const eip712 = instance.createEIP712(
       keypair.publicKey,
@@ -77,8 +77,8 @@ app.post('/decrypt-balance', async (req, res) => {
       signature.replace('0x', ''),
       [contractAddress],
       userAddress,
-      startTimestamp,
-      durationDays,
+      Number(startTimestamp),
+      Number(durationDays),
     );
 
     const balance = result[handle];
