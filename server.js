@@ -10,10 +10,8 @@ app.use(express.json());
 const CWETH = '0x46208622DA27d91db4f0393733C8BA082ed83158';
 const WETH  = '0xff54739b16576FA5402F211D0b938469Ab9A5f3F';
 const DRIP_AMOUNT = ethers.parseUnits('0.5', 18);
-
 const dripHistory = new Map();
 
-// Shared instance cache
 let _instance = null;
 async function getInstance() {
   if (_instance) return _instance;
@@ -28,23 +26,27 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Step 1: Get keypair + EIP712 for user to sign
 app.post('/decrypt-prepare', async (req, res) => {
+  console.log('decrypt-prepare body:', req.body);
   const { handle, contractAddress, userAddress } = req.body;
-  if (!handle || !contractAddress || !userAddress) {
-    return res.status(400).json({ error: 'Missing fields', success: false });
-  }
+
+  if (!handle || typeof handle !== 'string') return res.status(400).json({ error: 'handle must be a string', success: false });
+  if (!contractAddress || typeof contractAddress !== 'string') return res.status(400).json({ error: 'contractAddress must be a string', success: false });
+  if (!userAddress || typeof userAddress !== 'string') return res.status(400).json({ error: 'userAddress must be a string', success: false });
+
   try {
     const instance = await getInstance();
     const keypair = instance.generateKeypair();
     const startTimestamp = Math.floor(Date.now() / 1000).toString();
     const durationDays = '10';
+
     const eip712 = instance.createEIP712(
       keypair.publicKey,
       [contractAddress],
       startTimestamp,
       durationDays,
     );
+
     res.json({
       success: true,
       keypair: { publicKey: keypair.publicKey, privateKey: keypair.privateKey },
@@ -53,16 +55,19 @@ app.post('/decrypt-prepare', async (req, res) => {
       durationDays,
     });
   } catch(err) {
+    console.error('decrypt-prepare error:', err);
     res.status(500).json({ error: err.message, success: false });
   }
 });
 
-// Step 2: Decrypt with user signature
 app.post('/decrypt-balance', async (req, res) => {
+  console.log('decrypt-balance body keys:', Object.keys(req.body));
   const { handle, contractAddress, userAddress, signature, keypair, startTimestamp, durationDays } = req.body;
+
   if (!handle || !contractAddress || !userAddress || !signature || !keypair) {
-    return res.status(400).json({ error: 'Missing fields', success: false });
+    return res.status(400).json({ error: 'Missing required fields', success: false });
   }
+
   try {
     const instance = await getInstance();
     const result = await instance.userDecrypt(
@@ -75,10 +80,11 @@ app.post('/decrypt-balance', async (req, res) => {
       startTimestamp,
       durationDays,
     );
+
     const balance = result[handle];
     res.json({ success: true, balance: balance.toString() });
   } catch(err) {
-    console.error('Decrypt error:', err);
+    console.error('decrypt-balance error:', err);
     res.status(500).json({ error: err.message, success: false });
   }
 });
@@ -131,20 +137,16 @@ app.post('/faucet', async (req, res) => {
       process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com'
     );
     const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-
     const weth = new ethers.Contract(WETH, [
       'function mint(address to, uint256 amount) external',
       'function approve(address spender, uint256 amount) external returns (bool)',
     ], signer);
-
     const cweth = new ethers.Contract(CWETH, [
       'function wrap(address to, uint256 amount) external',
     ], signer);
-
     await (await weth.mint(signer.address, DRIP_AMOUNT)).wait();
     await (await weth.approve(CWETH, DRIP_AMOUNT)).wait();
     await (await cweth.wrap(checksumAddress, DRIP_AMOUNT)).wait();
-
     dripHistory.set(checksumAddress, now);
     res.json({ success: true, amount: '0.5', token: 'cWETH' });
   } catch(err) {
