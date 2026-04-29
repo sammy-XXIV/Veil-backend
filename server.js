@@ -47,10 +47,17 @@ app.post('/decrypt-prepare', async (req, res) => {
       durationDays,
     );
 
+    // Serialize keypair - handle BigInt values
+    const serializeValue = (v) => typeof v === 'bigint' ? v.toString() : v;
+    const serializeObj = (obj) => JSON.parse(JSON.stringify(obj, (_, v) => typeof v === 'bigint' ? v.toString() : v));
+
     res.json({
       success: true,
-      keypair: { publicKey: keypair.publicKey, privateKey: keypair.privateKey },
-      eip712,
+      keypair: {
+        publicKey: typeof keypair.publicKey === 'bigint' ? keypair.publicKey.toString() : keypair.publicKey,
+        privateKey: typeof keypair.privateKey === 'bigint' ? keypair.privateKey.toString() : keypair.privateKey,
+      },
+      eip712: serializeObj(eip712),
       startTimestamp,
       durationDays,
     });
@@ -157,3 +164,4 @@ app.post('/faucet', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Veil backend running on port ${PORT}`));
+
