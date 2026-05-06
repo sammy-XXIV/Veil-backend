@@ -11,6 +11,7 @@ const CWETH = '0x46208622DA27d91db4f0393733C8BA082ed83158';
 const WETH  = '0xff54739b16576FA5402F211D0b938469Ab9A5f3F';
 const DRIP_AMOUNT = ethers.parseUnits('0.5', 18);
 const dripHistory = new Map();
+const cache = new Map();
 
 let _instance = null;
 async function getInstance() {
@@ -47,8 +48,6 @@ app.post('/decrypt-prepare', async (req, res) => {
       durationDays,
     );
 
-    // Serialize keypair - handle BigInt values
-    const serializeValue = (v) => typeof v === 'bigint' ? v.toString() : v;
     const serializeObj = (obj) => JSON.parse(JSON.stringify(obj, (_, v) => typeof v === 'bigint' ? v.toString() : v));
 
     res.json({
@@ -162,6 +161,34 @@ app.post('/faucet', async (req, res) => {
   }
 });
 
+// ── CACHE ──
+app.post('/cache', (req, res) => {
+  const { address, collateral, debt, txHistory } = req.body;
+  if (!address) return res.status(400).json({ error: 'Missing address', success: false });
+  try {
+    const checksumAddress = ethers.getAddress(address);
+    const existing = cache.get(checksumAddress) || {};
+    cache.set(checksumAddress, {
+      collateral: collateral ?? existing.collateral ?? null,
+      debt: debt ?? existing.debt ?? null,
+      txHistory: txHistory ?? existing.txHistory ?? [],
+      updatedAt: Date.now(),
+    });
+    res.json({ success: true });
+  } catch(e) {
+    res.status(400).json({ error: 'Invalid address', success: false });
+  }
+});
+
+app.get('/cache/:address', (req, res) => {
+  try {
+    const checksumAddress = ethers.getAddress(req.params.address);
+    const data = cache.get(checksumAddress) || { collateral: null, debt: null, txHistory: [] };
+    res.json({ success: true, ...data });
+  } catch(e) {
+    res.status(400).json({ error: 'Invalid address', success: false });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Veil backend running on port ${PORT}`));
-
